@@ -1,6 +1,7 @@
-package com.example.myspringlab.service;
+package com.example.myspringlab.cmm.service;
 
-import com.example.myspringlab.vo.UserVO;
+import com.example.myspringlab.cmm.vo.UserVO;
+
 import java.util.List;
 
 public interface UserService {

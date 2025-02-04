@@ -1,6 +1,6 @@
-package com.example.myspringlab.mapper;
+package com.example.myspringlab.cmm.mapper;
 
-import com.example.myspringlab.vo.UserVO;
+import com.example.myspringlab.cmm.vo.UserVO;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

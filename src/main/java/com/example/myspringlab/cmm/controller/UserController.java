@@ -1,7 +1,7 @@
-package com.example.myspringlab.controller;
+package com.example.myspringlab.cmm.controller;
 
-import com.example.myspringlab.service.UserService;
-import com.example.myspringlab.vo.UserVO;
+import com.example.myspringlab.cmm.service.UserService;
+import com.example.myspringlab.cmm.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

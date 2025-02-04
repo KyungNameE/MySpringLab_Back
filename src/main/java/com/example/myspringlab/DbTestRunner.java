@@ -1,7 +1,7 @@
 package com.example.myspringlab;
 
-import com.example.myspringlab.service.UserService;
-import com.example.myspringlab.vo.UserVO;
+import com.example.myspringlab.cmm.service.UserService;
+import com.example.myspringlab.cmm.vo.UserVO;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

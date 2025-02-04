@@ -1,4 +1,4 @@
-package com.example.myspringlab.vo;
+package com.example.myspringlab.cmm.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
