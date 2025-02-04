@@ -25,11 +25,11 @@ public class DbTestRunner implements CommandLineRunner {
         System.out.println("초기 사용자 목록: " + users);
 
         // 2. 새 사용자 추가
-        UserVO newUser = new UserVO();
+        /*UserVO newUser = new UserVO();
         newUser.setName("Test User");
         newUser.setEmail("test@example.com");
         int inserted = userService.addUser(newUser);
-        System.out.println("추가된 사용자 수: " + inserted);
+        System.out.println("추가된 사용자 수: " + inserted);*/
 
         // 3. 업데이트된 사용자 목록 조회
         List<UserVO> updatedUsers = userService.getAllUsers();
