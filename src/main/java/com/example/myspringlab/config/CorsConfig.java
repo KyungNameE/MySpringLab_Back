@@ -13,8 +13,8 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // API 경로 지정
-                        .allowedOriginPatterns("*") // ✅ 모든 도메인 허용
+                registry.addMapping("/api/**") // ✅ 모든 API 요청 허용
+                        .allowedOrigins("http://localhost:3000") // ✅ 프론트엔드 React 서버 허용
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

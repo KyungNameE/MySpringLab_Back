@@ -1,79 +1,126 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.example.myspringlab.home.mapper.HomeMapper">
 
-    <!-- 추천 매물 저장 -->
-    <insert id="insertHome" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO recommended_properties (title, description, price, location, created_at, updated_at)
-        VALUES (#{title}, #{description}, #{price}, #{location}, NOW(), NOW());
-    </insert>
-
-    <!-- 추천 매물 이미지 저장 -->
-    <insert id="insertHomeImages">
-        INSERT INTO property_images (property_id, image_url, uploaded_at)
-        VALUES
-        <foreach collection="images" item="image" separator=",">
-            (#{propertyId}, #{image}, NOW())
-        </foreach>
-    </insert>
-
-    <!-- 파일 저장 테이블에 이미지 정보 저장 -->
-    <insert id="insertFileStorage">
-        INSERT INTO file_storage (file_name, file_path, file_type, property_id, uploaded_at)
-        VALUES
-        <foreach collection="images" item="image" separator=",">
-            (#{image}, 'C:/MySpringLab/files/' || #{image}, 'image/jpeg', #{propertyId}, NOW())
-        </foreach>
-    </insert>
-
-
-    <!-- 추천 매물 조회 (이미지 및 파일 정보 포함) -->
-    <select id="getHomes" resultMap="homeResultMap">
-        SELECT P.ID,
-        P.TITLE,
-        P.PRICE,
-        P.LOCATION,
-        I.IMAGE_URL,
-        S.FILE_PATH,
-        S.FILE_TYPE,
-        S.FILE_NAME
-        FROM RECOMMENDED_PROPERTIES P
-        LEFT JOIN PROPERTY_IMAGES I ON P.ID = I.PROPERTY_ID
-        LEFT JOIN FILE_STORAGE S ON P.ID = S.PROPERTY_ID
+    <!-- 목록(검색) -->
+    <select id="getHomes" resultType="com.example.myspringlab.home.vo.HomeVO">
+        SELECT
+          p.id,
+          p.title,
+          p.price,
+          p.location,
+          p.description,
+          (
+            SELECT image_url
+            FROM property_images
+            WHERE property_id = p.id
+              AND is_main = 'Y'
+            LIMIT 1
+          ) AS mainImage
+        FROM recommended_properties p
         WHERE 1=1
+
         <if test="title != null and title != ''">
-            AND LOWER(P.TITLE) LIKE LOWER(CONCAT('%', #{title}, '%'))
+            AND LOWER(p.title) LIKE LOWER(CONCAT('%', #{title}, '%'))
         </if>
         <if test="location != null and location != ''">
-            AND LOWER(P.LOCATION) LIKE LOWER(CONCAT('%', #{location}, '%'))
+            AND LOWER(p.location) LIKE LOWER(CONCAT('%', #{location}, '%'))
         </if>
         <if test="minPrice != null">
-            AND P.PRICE >= #{minPrice}
+            AND p.price >= #{minPrice}
         </if>
-        <!--<if test="maxPrice != null">
-            AND P.PRICE <= #{maxPrice}
-        </if>-->
+        <if test="maxPrice != null">
+            AND p.price &lt;= #{maxPrice}
+        </if>
+
+        ORDER BY p.id DESC
     </select>
 
+    <!-- 상세 -->
+    <select id="getHomeById" resultType="com.example.myspringlab.home.vo.HomeVO">
+        SELECT
+          id,
+          title,
+          price,
+          location,
+          description
+        FROM recommended_properties
+        WHERE id = #{id}
+    </select>
 
-    <!-- 결과 매핑 -->
-    <resultMap id="homeResultMap" type="com.example.myspringlab.home.vo.HomeVO">
-        <id property="id" column="ID"/>
-        <result property="title" column="TITLE"/>
-        <result property="price" column="PRICE"/>
-        <result property="location" column="LOCATION"/>
-        <collection property="images" ofType="java.lang.String">
-            <result column="IMAGE_URL"/>
-        </collection>
-        <collection property="files" ofType="com.example.myspringlab.home.vo.FileVO">
-            <result property="filePath" column="FILE_PATH"/>
-            <result property="fileType" column="FILE_TYPE"/>
-            <result property="fileName" column="FILE_NAME"/>
-        </collection>
-    </resultMap>
+    <!-- 대표 이미지 -->
+    <select id="getMainImage" resultType="String">
+        SELECT image_url
+        FROM property_images
+        WHERE property_id = #{propertyId}
+          AND is_main = 'Y'
+        LIMIT 1
+    </select>
 
+    <!-- 추가 이미지 -->
+    <select id="getSubImages" resultType="String">
+        SELECT image_url
+        FROM property_images
+        WHERE property_id = #{propertyId}
+          AND is_main = 'N'
+    </select>
 
+    <!-- 매물 등록 -->
+    <insert id="insertHome" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recommended_properties
+            (title, description, price, location, created_at, updated_at)
+        VALUES
+            (#{title}, #{description}, #{price}, #{location}, NOW(), NOW());
+    </insert>
 
+    <!-- 매물 수정 -->
+    <update id="updateHome">
+        UPDATE recommended_properties
+        SET
+          title = #{title},
+          price = #{price},
+          location = #{location},
+          description = #{description},
+          updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 대표 이미지 리셋 -->
+    <update id="resetMainImage">
+        UPDATE property_images
+        SET is_main = 'N'
+        WHERE property_id = #{propertyId}
+          AND is_main = 'Y'
+    </update>
+
+    <!-- 특정 이미지Url 대표로 설정 -->
+    <update id="setMainImage">
+        UPDATE property_images
+        SET is_main = 'Y'
+        WHERE property_id = #{propertyId}
+          AND image_url = #{imageUrl}
+    </update>
+
+    <!-- 이미지 등록 -->
+    <insert id="insertHomeImage">
+        INSERT INTO property_images (property_id, image_url, is_main, uploaded_at)
+        VALUES (#{propertyId}, #{imageUrl}, #{isMain}, NOW())
+    </insert>
+
+    <!-- 이미지 삭제 -->
+    <delete id="deleteImage">
+        DELETE FROM property_images
+        WHERE property_id = #{propertyId}
+          AND image_url = #{imageUrl}
+    </delete>
+
+    <!-- file_storage 테이블에서 삭제 (필요 시) -->
+    <delete id="deleteFileStorage">
+        DELETE FROM file_storage
+        WHERE property_id = #{propertyId}
+          AND file_name = #{fileName}
+    </delete>
 </mapper>

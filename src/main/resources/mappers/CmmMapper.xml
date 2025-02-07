@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.myspringlab.cmm.mapper.CmmMapper">
+
+    <!-- 시도 코드 조회 -->
+    <select id="selectOrgSdCodeList" resultType="com.example.myspringlab.cmm.vo.OrgSdCodeVO">
+        SELECT
+            sd_cd   AS sdCd,
+            sd_nm   AS sdNm,
+            use_yn  AS useYn,
+            sd_snm  AS sdSnm
+        FROM tb_org_sd_code
+    </select>
+
+    <!-- 시군구 코드 조회 -->
+    <select id="selectOrgSggCodeList" resultType="com.example.myspringlab.cmm.vo.OrgSggCodeVO">
+        SELECT
+            sd_cd   AS sdCd,
+            sd_nm   AS sdNm,
+            sgg_cd  AS sggCd,
+            sgg_nm  AS sggNm,
+            use_yn  AS useYn,
+            sd_snm  AS sdSnm
+        FROM tb_org_sgg_code
+    </select>
+
+    <!-- 읍면동 코드 조회 -->
+    <select id="selectOrgEmdCodeList" resultType="com.example.myspringlab.cmm.vo.OrgEmdCodeVO">
+        SELECT
+            sd_cd   AS sdCd,
+            sd_nm   AS sdNm,
+            sgg_cd  AS sggCd,
+            sgg_nm  AS sggNm,
+            emd_cd  AS emdCd,
+            emd_nm  AS emdNm,
+            use_yn  AS useYn,
+            sd_snm  AS sdSnm
+        FROM tb_org_emd_code
+    </select>
+
+</mapper>

@@ -1,15 +1,22 @@
 package com.example.myspringlab.home.service;
 
-
 import com.example.myspringlab.home.vo.HomeVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface HomeService {
-
-    // 추천 매물 목록 조회 (검색 조건 포함)
     List<HomeVO> getHomes(String title, String location, Double minPrice, Double maxPrice);
 
-    // 추천 매물 저장 (매물 + 이미지)
-    void saveHome(HomeVO home);
+    HomeVO saveHome(String title, String description, Double price, String location,
+                    MultipartFile mainImage, List<MultipartFile> images);
+
+    HomeVO getHomeById(Long id);
+
+    HomeVO updateHome(Long id, String title, Double price, String location, String description,
+                      MultipartFile mainImage, List<MultipartFile> images);
+
+    void deleteImage(Long id, String imageUrl);
+
+    void setMainImage(Long id, String imageUrl);
 }

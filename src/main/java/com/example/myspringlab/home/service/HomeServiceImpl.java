@@ -1,22 +1,24 @@
 package com.example.myspringlab.home.service;
 
-
 import com.example.myspringlab.home.mapper.HomeMapper;
 import com.example.myspringlab.home.vo.HomeVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class HomeServiceImpl implements HomeService {
 
     private final HomeMapper homeMapper;
 
-    // 파일 저장 경로 설정 (application.properties에서 가져오기)
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -26,50 +28,117 @@ public class HomeServiceImpl implements HomeService {
 
     @Override
     public List<HomeVO> getHomes(String title, String location, Double minPrice, Double maxPrice) {
-        return homeMapper.getHomes(
-                (title == null || title.trim().isEmpty()) ? null : title,
-                (location == null || location.trim().isEmpty()) ? null : location,
-                minPrice,
-                maxPrice
-        );
+        return homeMapper.getHomes(title, location, minPrice, maxPrice);
     }
-
 
     @Override
-    @Transactional // ✅ 매물 + 이미지 + 파일 저장을 하나의 트랜잭션으로 처리
-    public void saveHome(HomeVO home) {
-        // 1. 추천 매물 저장 (ID 자동 생성됨)
+    @Transactional
+    public HomeVO saveHome(String title, String description, Double price, String location,
+                           MultipartFile mainImage, List<MultipartFile> images) {
+        // 매물 등록
+        HomeVO home = new HomeVO();
+        home.setTitle(title);
+        home.setDescription(description);
+        home.setPrice(price);
+        home.setLocation(location);
         homeMapper.insertHome(home);
 
-        // 2. 이미지가 존재하면 property_images 테이블에 저장
-        if (home.getImages() != null && !home.getImages().isEmpty()) {
-            homeMapper.insertHomeImages(home.getId(), home.getImages());
+        // 대표 이미지
+        if (mainImage != null && !mainImage.isEmpty()) {
+            String mainImageFileName = saveFile(mainImage);
+            homeMapper.insertHomeImage(home.getId(), mainImageFileName, "Y");
+        }
 
-            // 3. 파일 저장 경로 설정 및 파일 저장 처리
-            for (String imageName : home.getImages()) {
-                String filePath = uploadDir + "/" + imageName;
-                // 실제 파일 저장 (예제: 빈 파일 생성)
-                saveFile(filePath);
-                // 4. 파일 저장 테이블(file_storage)에 저장
-                homeMapper.insertFileStorage(home.getId(), filePath, home.getImages());
+        // 추가 이미지
+        if (images != null && !images.isEmpty()) {
+            for (MultipartFile image : images) {
+                String savedFileName = saveFile(image);
+                homeMapper.insertHomeImage(home.getId(), savedFileName, "N");
             }
+        }
+
+        return homeMapper.getHomeById(home.getId());
+    }
+
+    @Override
+    public HomeVO getHomeById(Long id) {
+        HomeVO home = homeMapper.getHomeById(id);
+        if (home != null) {
+            String mainImage = homeMapper.getMainImage(id);
+            home.setMainImage(mainImage);
+
+            List<String> subImages = homeMapper.getSubImages(id);
+            home.setImages(subImages);
+        }
+        return home;
+    }
+
+    @Override
+    @Transactional
+    public HomeVO updateHome(Long id, String title, Double price, String location, String description,
+                             MultipartFile mainImage, List<MultipartFile> images) {
+        // 기본정보 수정
+        homeMapper.updateHome(id, title, price, location, description);
+
+        // 대표 이미지 변경
+        if (mainImage != null && !mainImage.isEmpty()) {
+            homeMapper.resetMainImage(id);
+            String mainImageFileName = saveFile(mainImage);
+            homeMapper.insertHomeImage(id, mainImageFileName, "Y");
+        }
+
+        // 추가 이미지
+        if (images != null && !images.isEmpty()) {
+            for (MultipartFile image : images) {
+                String savedFileName = saveFile(image);
+                homeMapper.insertHomeImage(id, savedFileName, "N");
+            }
+        }
+
+        return getHomeById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteImage(Long id, String imageUrl) {
+        // property_images 삭제
+        homeMapper.deleteImage(id, imageUrl);
+
+        // file_storage 테이블에서도 삭제 (원한다면)
+        homeMapper.deleteFileStorage(id, imageUrl);
+
+        // 실제 파일 삭제 (원한다면)
+        File file = new File(uploadDir, imageUrl);
+        if (file.exists()) {
+            file.delete();
         }
     }
 
-    // ✅ 파일 저장 메서드 (실제 파일 생성)
-    private void saveFile(String filePath) {
+    @Override
+    @Transactional
+    public void setMainImage(Long id, String imageUrl) {
+        // 기존 대표 이미지 N으로
+        homeMapper.resetMainImage(id);
+        // 해당 이미지 Y로
+        homeMapper.setMainImage(id, imageUrl);
+    }
+
+    // 파일 저장
+    private String saveFile(MultipartFile file) {
+        File directory = new File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        File destination = new File(directory, fileName);
+
         try {
-            File file = new File(filePath);
-            if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs(); // 디렉토리 생성
-            }
-            if (!file.exists()) {
-                file.createNewFile(); // 빈 파일 생성
-            }
+            Files.copy(file.getInputStream(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("파일 저장 중 오류 발생: " + filePath);
+            throw new RuntimeException("파일 저장 중 오류 발생: " + fileName, e);
         }
-    }
 
+        return fileName;
+    }
 }
